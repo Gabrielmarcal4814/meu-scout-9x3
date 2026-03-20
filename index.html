@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Scout 9x3</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial;background:#0f172a;color:#fff;margin:0}
+.header{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;background:#020617}
+.logo{font-size:22px;font-weight:bold;background:#22c55e;padding:6px 12px;border-radius:8px}
+.container{padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
+.card{background:#1e293b;padding:15px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.3)}
+input,select,button{margin:4px;padding:8px;border-radius:6px;border:none}
+button{cursor:pointer;background:#22c55e;color:#000;font-weight:bold}
+canvas{background:#fff;border-radius:10px}
+.stat{font-size:18px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="logo">⚽ Meu Scout 9x3</div>
+<button onclick="window.print()">📄 PDF</button>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>➕ Nova Partida</h3>
+<input id="data" placeholder="Data">
+<input id="adv" placeholder="Adversário">
+<input id="gols" type="number" placeholder="Gols feitos">
+<input id="sofridos" type="number" placeholder="Gols sofridos">
+<select id="resultado">
+<option value="">Resultado</option>
+<option>V</option>
+<option>E</option>
+<option>D</option>
+</select>
+<button onclick="addJogo()">Salvar</button>
+</div>
+
+<div class="grid">
+<div class="card"><div class="stat" id="totalJogos"></div><small>Jogos</small></div>
+<div class="card"><div class="stat" id="totalGols"></div><small>Gols</small></div>
+<div class="card"><div class="stat" id="saldo"></div><small>Saldo</small></div>
+<div class="card"><div class="stat" id="aproveitamento"></div><small>Aproveitamento</small></div>
+</div>
+
+<div class="grid">
+<div class="card"><h4>📈 Evolução</h4><canvas id="linha"></canvas></div>
+<div class="card"><h4>🎯 Finalizações</h4><canvas id="pizza"></canvas></div>
+<div class="card"><h4>⚽ Zonas</h4><canvas id="zona"></canvas></div>
+</div>
+
+<div class="card">
+<h3>🏆 Ranking</h3>
+<p id="ranking"></p>
+</div>
+
+</div>
+
+<script>
+let jogos=JSON.parse(localStorage.getItem('jogos')||'[]');
+
+function salvar(){localStorage.setItem('jogos',JSON.stringify(jogos))}
+
+function addJogo(){
+const j={data:data.value,adversario:adv.value,gols:+gols.value,sofridos:+sofridos.value,resultado:resultado.value};
+jogos.push(j);salvar();render();
+}
+
+function render(){
+let total=jogos.length;
+let gols=jogos.reduce((a,b)=>a+b.gols,0);
+let sofridos=jogos.reduce((a,b)=>a+b.sofridos,0);
+let saldoVal=gols-sofridos;
+let v=jogos.filter(j=>j.resultado=='V').length;
+let ap=total?((v/total)*100).toFixed(1):0;
+
+// cards
+totalJogos.innerText=total;
+totalGols.innerText=gols;
+saldo.innerText=saldoVal;
+aproveitamento.innerText=ap+'%';
+
+// linha
+new Chart(linha,{type:'line',data:{labels:jogos.map(j=>j.data),datasets:[{data:jogos.map(j=>j.gols)}]}});
+
+// ranking
+let advStats={};
+jogos.forEach(j=>{
+if(!advStats[j.adversario])advStats[j.adversario]={v:0,j:0};
+advStats[j.adversario].j++;
+if(j.resultado=='V')advStats[j.adversario].v++;
+});
+let melhor='',pior='',max=0,min=999;
+Object.entries(advStats).forEach(([k,v])=>{
+let perc=v.v/v.j;
+if(perc>max){max=perc;melhor=k}
+if(perc<min){min=perc;pior=k}
+});
+ranking.innerHTML=`Melhor: ${melhor||'-'}<br>Pior: ${pior||'-'}`;
+}
+
+render();
+</script>
+
+</body>
+</html>
